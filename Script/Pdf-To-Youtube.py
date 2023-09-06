@@ -30,8 +30,11 @@ def download_video(link, output_folder):
         # Get the video stream URL
         video_url = stream.url
 
-        # Determine the file size
-        file_size = int(stream.filesize)
+        # Determine video quality
+        video_quality = stream.resolution
+
+        # Determine the total file size from the stream object
+        file_size = stream.filesize
 
         # Create the output file path
         output_path = os.path.join(output_folder, f"{video_title}.mp4")
@@ -45,7 +48,8 @@ def download_video(link, output_folder):
                 total=file_size,
                 unit="B",
                 unit_scale=True,
-                desc=f"Downloading: {video_title}",
+                desc=f"Downloading: Quality: {video_quality}, Total Size: {file_size/1000000:.2f} MB",
+                bar_format="{desc}: {percentage:3.0f}% [{bar}] {n_fmt}/{total_fmt}",
             ) as pbar:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
