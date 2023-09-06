@@ -14,6 +14,7 @@ FileTubeCatcher is a versatile YouTube video downloader that allows you to effor
 - Choose your own custom output folder to save downloaded videos.
 - Automatic logging of download activities for easy tracking.
 - Support for processing multiple files with different extensions in a folder.
+- Includes an executable file for easy use.
 
 ## Prerequisites
 
@@ -25,6 +26,15 @@ Before using FileTubeCatcher, ensure that you have the following requirements me
 - PDF, text, CSV, or Excel files containing YouTube video links.
 
 ## Usage
+
+You can use FileTubeCatcher in two ways:
+**Using the Executable File (Recommended):**
+
+1. Download the executable file in the `Dist` folder.
+
+2. Run the executable file. It provides a user-friendly interface for easy interaction.
+
+**Using the Python Script:**
 
 1. Clone this repository to your local machine or download the source code.
 
