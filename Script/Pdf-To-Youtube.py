@@ -44,7 +44,8 @@ def process_pdfs_in_folder(folder_path, output_folder):
 
 
 if __name__ == "__main__":
-    folder_path = "Pdfs"  # Replace with the path to your folder of PDFs
-    output_folder = "Output"
+    # Get user input for the PDF folder location and output folder name
+    pdf_folder = input("Enter the PDF folder location: ")
+    output_folder = input("Enter the output folder name: ")
 
-    process_pdfs_in_folder(folder_path, output_folder)
+    process_pdfs_in_folder(pdf_folder, output_folder)
