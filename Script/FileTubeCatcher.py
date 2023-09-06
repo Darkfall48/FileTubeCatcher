@@ -1,10 +1,29 @@
 import os
-import fitz  # PyMuPDF
+import fitz
 import re
 import requests
 from pytube import YouTube
-from tqdm import tqdm  # Import tqdm for the progress bar
-import pandas as pd  # Import pandas library for reading CSV or xlsx files
+from tqdm import tqdm
+import pandas as pd
+import logging
+
+# Configure the logging
+logging.basicConfig(
+    filename="download.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+# Create a logger
+logger = logging.getLogger()
+
+
+def log_and_print(message):
+    # Log the message
+    logger.info(message)
+    # Print the message to the console
+    print(message)
 
 
 def extract_youtube_links(pdf_path):
@@ -35,7 +54,6 @@ def extract_youtube_links_from_csv(file_path):
     df = pd.read_csv(file_path)
     youtube_links = []
 
-    # Iterate through all columns in the CSV and check for YouTube links
     for column in df.columns:
         youtube_links.extend(
             df[column].apply(
@@ -52,7 +70,6 @@ def extract_youtube_links_from_xlsx(file_path):
     df = pd.read_excel(file_path)
     youtube_links = []
 
-    # Iterate through all columns in the XLSX and check for YouTube links
     for column in df.columns:
         youtube_links.extend(
             df[column].apply(
@@ -72,13 +89,12 @@ def download_video(link, output_folder, resolution):
         if resolution.lower() == "highest":
             stream = yt.streams.get_highest_resolution()
         else:
-            stream = yt.streams.filter(res=resolution).first()  # Filter by resolution
+            stream = yt.streams.filter(res=resolution).first()
 
         if not stream:
-            print(f"Video with resolution {resolution} not available for {link}")
-            stream = (
-                yt.streams.get_highest_resolution()
-            )  # Get the highest available resolution instead
+            message = f"Video with resolution {resolution} not available for {link}"
+            log_and_print(message)
+            stream = yt.streams.get_highest_resolution()
 
         video_title = yt.title
         video_quality = stream.resolution
@@ -101,8 +117,12 @@ def download_video(link, output_folder, resolution):
                         output_file.write(chunk)
                         pbar.update(len(chunk))
 
+        message = f"Downloaded: {video_title}"
+        log_and_print(message)
+
     except Exception as e:
-        print(f"Error downloading {link}: {e}")
+        message = f"Error downloading {link}: {e}"
+        log_and_print(message)
 
 
 def download_videos(youtube_links, output_folder, resolution):
@@ -111,18 +131,16 @@ def download_videos(youtube_links, output_folder, resolution):
 
 
 def process_files(file_or_folder, output_folder, resolution):
-    # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
 
     if os.path.isdir(file_or_folder):
-        # Process files in the folder
         files = os.listdir(file_or_folder)
         for file_name in files:
             file_path = os.path.join(file_or_folder, file_name)
             file_extension = os.path.splitext(file_path)[-1].lower()
 
-            # Print the currently processed file
-            print(f"Processing file: {file_name}")
+            message = f"Processing file: {file_name}"
+            log_and_print(message)
 
             if file_extension == ".pdf":
                 youtube_links = extract_youtube_links(file_path)
@@ -137,13 +155,14 @@ def process_files(file_or_folder, output_folder, resolution):
                 youtube_links = extract_youtube_links_from_xlsx(file_path)
                 download_videos(youtube_links, output_folder, resolution)
             else:
-                print(f"Unsupported file format: {file_extension}")
+                message = f"Unsupported file format: {file_extension}"
+                log_and_print(message)
     else:
-        print("Invalid input. Please provide a valid folder or file path.")
+        message = "Invalid input. Please provide a valid folder or file path."
+        log_and_print(message)
 
 
 if __name__ == "__main__":
-    # Get user input for the folder or file location and output folder name
     file_or_folder = input("Enter the folder or file location: ")
     output_folder = input("Enter the output folder name: ")
     resolution = input(
