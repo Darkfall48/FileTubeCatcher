@@ -3,7 +3,7 @@ import fitz  # PyMuPDF
 import re
 import requests
 from pytube import YouTube
-from tqdm import tqdm  # Import tqdm for progress bar
+from tqdm import tqdm  # Import tqdm for the progress bar
 import pandas as pd  # Import pandas library for reading CSV or xlsx files
 
 
@@ -65,27 +65,28 @@ def extract_youtube_links_from_xlsx(file_path):
     return [link for sublist in youtube_links for link in sublist]
 
 
-def download_video(link, output_folder):
+def download_video(link, output_folder, resolution):
     try:
         yt = YouTube(link)
-        stream = yt.streams.get_highest_resolution()
+
+        if resolution.lower() == "highest":
+            stream = yt.streams.get_highest_resolution()
+        else:
+            stream = yt.streams.filter(res=resolution).first()  # Filter by resolution
+
+        if not stream:
+            print(f"Video with resolution {resolution} not available for {link}")
+            stream = (
+                yt.streams.get_highest_resolution()
+            )  # Get the highest available resolution instead
+
         video_title = yt.title
-
-        # Get the video stream URL
-        video_url = stream.url
-
-        # Determine video quality
         video_quality = stream.resolution
-
-        # Determine the total file size from the stream object
         file_size = stream.filesize
-
-        # Create the output file path
         output_path = os.path.join(output_folder, f"{video_title}.mp4")
 
-        # Download the video with requests while displaying a progress bar
         with open(output_path, "wb") as output_file, requests.get(
-            video_url, stream=True
+            stream.url, stream=True
         ) as response:
             response.raise_for_status()
             with tqdm(
@@ -104,12 +105,12 @@ def download_video(link, output_folder):
         print(f"Error downloading {link}: {e}")
 
 
-def download_videos(youtube_links, output_folder):
+def download_videos(youtube_links, output_folder, resolution):
     for link in youtube_links:
-        download_video(link, output_folder)
+        download_video(link, output_folder, resolution)
 
 
-def process_files(file_or_folder, output_folder):
+def process_files(file_or_folder, output_folder, resolution):
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
 
@@ -125,16 +126,16 @@ def process_files(file_or_folder, output_folder):
 
             if file_extension == ".pdf":
                 youtube_links = extract_youtube_links(file_path)
-                download_videos(youtube_links, output_folder)
+                download_videos(youtube_links, output_folder, resolution)
             elif file_extension == ".txt":
                 youtube_links = extract_youtube_links_from_file(file_path)
-                download_videos(youtube_links, output_folder)
+                download_videos(youtube_links, output_folder, resolution)
             elif file_extension == ".csv":
                 youtube_links = extract_youtube_links_from_csv(file_path)
-                download_videos(youtube_links, output_folder)
+                download_videos(youtube_links, output_folder, resolution)
             elif file_extension == ".xlsx":
                 youtube_links = extract_youtube_links_from_xlsx(file_path)
-                download_videos(youtube_links, output_folder)
+                download_videos(youtube_links, output_folder, resolution)
             else:
                 print(f"Unsupported file format: {file_extension}")
     else:
@@ -145,5 +146,8 @@ if __name__ == "__main__":
     # Get user input for the folder or file location and output folder name
     file_or_folder = input("Enter the folder or file location: ")
     output_folder = input("Enter the output folder name: ")
+    resolution = input(
+        "Enter the resolution ('highest' for highest available, e.g., '720p'): "
+    )
 
-    process_files(file_or_folder, output_folder)
+    process_files(file_or_folder, output_folder, resolution)
