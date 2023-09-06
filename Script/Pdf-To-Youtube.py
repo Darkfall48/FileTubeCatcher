@@ -4,6 +4,7 @@ import re
 import requests
 from pytube import YouTube
 from tqdm import tqdm  # Import tqdm for progress bar
+import pandas as pd  # Import pandas library for reading CSV or xlsx files
 
 
 def extract_youtube_links(pdf_path):
@@ -19,6 +20,49 @@ def extract_youtube_links(pdf_path):
         youtube_links.extend(re.findall(youtube_regex, text))
 
     return youtube_links
+
+
+def extract_youtube_links_from_file(file_path):
+    with open(file_path, "r") as file:
+        content = file.read()
+        youtube_links = re.findall(
+            r"(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)", content
+        )
+    return youtube_links
+
+
+def extract_youtube_links_from_csv(file_path):
+    df = pd.read_csv(file_path)
+    youtube_links = []
+
+    # Iterate through all columns in the CSV and check for YouTube links
+    for column in df.columns:
+        youtube_links.extend(
+            df[column].apply(
+                lambda x: re.findall(
+                    r"(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)", str(x)
+                )
+            )
+        )
+
+    return [link for sublist in youtube_links for link in sublist]
+
+
+def extract_youtube_links_from_xlsx(file_path):
+    df = pd.read_excel(file_path)
+    youtube_links = []
+
+    # Iterate through all columns in the XLSX and check for YouTube links
+    for column in df.columns:
+        youtube_links.extend(
+            df[column].apply(
+                lambda x: re.findall(
+                    r"(https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+)", str(x)
+                )
+            )
+        )
+
+    return [link for sublist in youtube_links for link in sublist]
 
 
 def download_video(link, output_folder):
@@ -65,22 +109,41 @@ def download_videos(youtube_links, output_folder):
         download_video(link, output_folder)
 
 
-def process_pdfs_in_folder(pdf_folder, output_folder):
+def process_files(file_or_folder, output_folder):
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
 
-    # List all PDF files in the folder
-    pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith(".pdf")]
+    if os.path.isdir(file_or_folder):
+        # Process files in the folder
+        files = os.listdir(file_or_folder)
+        for file_name in files:
+            file_path = os.path.join(file_or_folder, file_name)
+            file_extension = os.path.splitext(file_path)[-1].lower()
 
-    for pdf_file in pdf_files:
-        pdf_path = os.path.join(pdf_folder, pdf_file)
-        youtube_links = extract_youtube_links(pdf_path)
-        download_videos(youtube_links, output_folder)
+            # Print the currently processed file
+            print(f"Processing file: {file_name}")
+
+            if file_extension == ".pdf":
+                youtube_links = extract_youtube_links(file_path)
+                download_videos(youtube_links, output_folder)
+            elif file_extension == ".txt":
+                youtube_links = extract_youtube_links_from_file(file_path)
+                download_videos(youtube_links, output_folder)
+            elif file_extension == ".csv":
+                youtube_links = extract_youtube_links_from_csv(file_path)
+                download_videos(youtube_links, output_folder)
+            elif file_extension == ".xlsx":
+                youtube_links = extract_youtube_links_from_xlsx(file_path)
+                download_videos(youtube_links, output_folder)
+            else:
+                print(f"Unsupported file format: {file_extension}")
+    else:
+        print("Invalid input. Please provide a valid folder or file path.")
 
 
 if __name__ == "__main__":
-    # Get user input for the PDF folder location and output folder name
-    pdf_folder = input("Enter the PDF folder location: ")
+    # Get user input for the folder or file location and output folder name
+    file_or_folder = input("Enter the folder or file location: ")
     output_folder = input("Enter the output folder name: ")
 
-    process_pdfs_in_folder(pdf_folder, output_folder)
+    process_files(file_or_folder, output_folder)
